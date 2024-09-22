@@ -1,0 +1,141 @@
+import sys
+sys.path.append('/home/runner/malcolm-workspace/2023-08-13-matrix-class')
+
+from matrix import *
+from helpers import *
+import numpy as np
+
+class NeuralNet:
+
+  def __init__(self, weights):
+    self.weights = weights
+    self.num_layers = len(self.weights) + 1
+
+  def show(self):
+    for matrix in self.weights:
+      matrix.show()
+      print(' ')
+
+  def compute_next_layer(self, layer_index, previous_activations):
+    layer_weights = self.weights[layer_index]
+    if layer_weights.num_cols != len(previous_activations):
+      previous_activations.append(1)
+    nested_pa = []
+    for activation in previous_activations:
+      nested_pa.append([activation])
+    pa_matrix = Matrix(nested_pa)
+    #print(f'layer_weights')
+    #layer_weights.show()
+    #print(f'pa_matrix')
+    #pa_matrix.show()
+    next_activations = layer_weights.mult(pa_matrix)
+
+    if next_activations.num_cols != 1:
+      raise Exception('Activation matrix non-linear')
+
+    next_activations = next_activations.column(0)
+    for i in range(len(next_activations)):
+      next_activations[i] = np.tanh(next_activations[i])
+    return next_activations
+
+  def compute_all_layers(self, input_layer):
+    activations = self.compute_next_layer(0, input_layer)
+    A = [input_layer]
+    for i in range(self.num_layers - 2):
+      #if i == self.num_layers - 3:
+      #  activations.pop(-1)
+      #attempted fix for extra 1 in output layer, created more problems
+      A.append(activations)
+      activations = self.compute_next_layer(i + 1, activations)
+    A.append(activations)
+    return activations, A
+
+  def make_child(self, variance):
+    child = []
+    for W in self.weights:
+      new_matrix = W.make_random_copy(variance)
+      child.append(new_matrix)
+    child = NeuralNet(child)
+    
+    return child
+
+
+  def find_cost(self, input_layers, ideal_output_layers):
+    cost = 0
+    for i in range(len(input_layers)):
+      output_layer, activations = self.compute_all_layers(input_layers[i])
+      for j in range(len(output_layer)):
+        cost += (output_layer[j] - ideal_output_layers[i][j])**2
+    
+    return cost
+
+  
+  #backpropogation stuff
+  def get_RSSs(self, layer_index, previous_RSSs, activations):
+    layer_weights = self.weights[layer_index]
+    layer_activations = activations[layer_index + 1]
+    if layer_activations[-1] == 1:
+      layer_activations.pop(-1)
+      previous_RSSs.pop(-1)
+    if len(layer_activations) != len(previous_RSSs):
+      raise Exception('Activations do not match RSSs')
+    formatted_vector = []
+    for i in range(len(layer_activations)):
+      formatted_vector.append((1 - layer_activations[i]**2) * previous_RSSs[i])
+    formatted_vector = [formatted_vector]
+    vector = Matrix(formatted_vector)
+    new_RSSs = vector.mult(layer_weights)
+    return new_RSSs
+    
+
+
+class Generation:
+  def __init__(self, parent_nets):
+    self.nets = parent_nets
+
+  def show(self):
+    for net in self.nets:
+      net.show()
+      print(' ')
+      print(' ')
+
+  def make_children(self, num_children):
+    children = self.nets
+
+    for net in self.nets:
+      for num in range(num_children):
+        child = net.make_child(1)
+        children.append(child)
+
+    return children
+
+  def find_best_children(self, input_layers, ideal_output_layers, num_children, num_survive):
+    children = self.make_children(num_children)
+    best_children = []
+    for i in range(num_survive):
+      costs = []
+      for child in children:
+        cost = child.find_cost(input_layers, ideal_output_layers)
+        costs.append(cost)
+
+      best_child_index = costs.index(np.min(costs))
+      best_children.append(children(best_child_index))
+    return best_children
+
+  def iterate(self, input_layers, ideal_output_layers, num_children_per_net=20, num_parent_nets=1):
+    next_gen = self.find_best_children(input_layers, ideal_output_layers, 20, 1)
+    next_gen = Generation(next_gen)
+    return next_gen
+
+weights = generate_weights([2, 5, 5, 5, 2])
+parent_net = NeuralNet(weights)
+inputs = np.linspace(-1, 1, 20)
+ideal_output_layers = []
+input_layers = []
+for input in inputs:
+  ideal_output_layers.append([eval_coefficients(get_ground_coefficients(), input)])
+  input_layers.append([input])
+generation = Generation([parent_net])
+for i in range(10):
+  generation = generation.iterate(input_layers, ideal_output_layers)
+generation[0].show()
