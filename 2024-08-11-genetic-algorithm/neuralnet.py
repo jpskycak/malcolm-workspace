@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/runner/malcolm-workspace/2023-08-13-matrix-class')
+sys.path.append('/workspace/malcolm-workspace/2023-08-13-matrix-class/matrix.py')
 
 from matrix import *
 from helpers import *
@@ -96,8 +96,8 @@ class Generation:
   def show(self):
     for net in self.nets:
       net.show()
-      print(' ')
-      print(' ')
+      print('\n \n')
+
 
   def make_children(self, num_children):
     children = self.nets
@@ -115,6 +115,7 @@ class Generation:
     for i in range(num_survive):
       costs = []
       for child in children:
+        print('executing code')
         cost = child.find_cost(input_layers, ideal_output_layers)
         costs.append(cost)
 
@@ -123,7 +124,7 @@ class Generation:
     return best_children
 
   def iterate(self, input_layers, ideal_output_layers, num_children_per_net=20, num_parent_nets=1):
-    next_gen = self.find_best_children(input_layers, ideal_output_layers, 20, 1)
+    next_gen = self.find_best_children(input_layers, ideal_output_layers, num_children_per_net, num_parent_nets)
     next_gen = Generation(next_gen)
     return next_gen
 
