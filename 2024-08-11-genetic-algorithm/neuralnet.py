@@ -4,6 +4,7 @@ sys.path.append('/workspace/malcolm-workspace/2023-08-13-matrix-class/matrix.py'
 from matrix import *
 from helpers import *
 import numpy as np
+import matplotlib.pyplot as plt
 
 class NeuralNet:
 
@@ -70,6 +71,14 @@ class NeuralNet:
     return cost
 
   
+  def compute_final_RSS(self, input_layers, ideal_output_layers):
+    RSS = 0
+    for i in range(len(input_layers)):
+      output_layer = self.compute_all_layers(input_layers[i])[0]
+      for j in range(len(output_layer)):
+        RSS += (output_layer[j] - ideal_output_layers[i][j]) ** 2
+    return RSS / len(input_layers)
+
   #backpropogation stuff
   def get_RSSs(self, layer_index, previous_RSSs, activations):
     layer_weights = self.weights[layer_index]
@@ -102,9 +111,9 @@ class Generation:
   def make_children(self, num_children):
     children = self.nets
 
-    for net in self.nets:
+    for net_index in range(len(self.nets)):
       for num in range(num_children):
-        child = net.make_child(1)
+        child = self.nets[net_index].make_child(0.1)
         children.append(child)
 
     return children
@@ -115,12 +124,11 @@ class Generation:
     for i in range(num_survive):
       costs = []
       for child in children:
-        print('executing code')
         cost = child.find_cost(input_layers, ideal_output_layers)
         costs.append(cost)
 
       best_child_index = costs.index(np.min(costs))
-      best_children.append(children(best_child_index))
+      best_children.append(children[best_child_index])
     return best_children
 
   def iterate(self, input_layers, ideal_output_layers, num_children_per_net=20, num_parent_nets=1):
@@ -128,15 +136,33 @@ class Generation:
     next_gen = Generation(next_gen)
     return next_gen
 
-weights = generate_weights([2, 5, 5, 5, 2])
+  def compute_RSS(self, input_layers, ideal_output_layers):
+    RSS = 0
+    for net in self.nets:
+      RSS += 100 * net.compute_final_RSS(input_layers, ideal_output_layers) # to get RSSs on a reasonable scale
+    return RSS / len(self.nets)
+
+net_size = [2, 5, 5, 5, 5, 5, 2]
+points = 50
+domain = [-1, 1]
+iterations = 20
+child_nets = 50
+parent_nets = 5
+
+weights = generate_weights(net_size)
 parent_net = NeuralNet(weights)
-inputs = np.linspace(-1, 1, 20)
+inputs = np.linspace(domain[0], domain[1], points)
 ideal_output_layers = []
 input_layers = []
 for input in inputs:
   ideal_output_layers.append([eval_coefficients(get_ground_coefficients(), input)])
   input_layers.append([input])
 generation = Generation([parent_net])
-for i in range(10):
-  generation = generation.iterate(input_layers, ideal_output_layers)
-generation[0].show()
+for i in range(iterations):
+  generation = generation.iterate(input_layers, ideal_output_layers, child_nets, parent_nets)
+  print(generation.compute_RSS(input_layers, ideal_output_layers))
+
+for i in range(len(input_layers)):
+  print(generation.nets[0].compute_all_layers(input_layers[i])[0])
+  print(ideal_output_layers[i])
+  print(' ')

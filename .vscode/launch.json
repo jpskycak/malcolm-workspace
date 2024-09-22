@@ -7,7 +7,7 @@
             "type": "debugpy",
             "request": "launch",
             "name": "Launch Program",
-            "program": "main.py"
+            "program": "2024-08-11-genetic-algorithm/neuralnet.py"
         }
     ]
 }
