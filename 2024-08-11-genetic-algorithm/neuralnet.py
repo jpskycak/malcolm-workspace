@@ -49,6 +49,8 @@ class NeuralNet:
       A.append(activations)
       activations = self.compute_next_layer(i + 1, activations)
     A.append(activations)
+    for i in range(len(activations)):
+      activations[i] = np.arctanh(activations[i])
     return activations, A
 
   def make_child(self, variance):
@@ -77,6 +79,7 @@ class NeuralNet:
       output_layer = self.compute_all_layers(input_layers[i])[0]
       for j in range(len(output_layer)):
         RSS += (output_layer[j] - ideal_output_layers[i][j]) ** 2
+
     return RSS / len(input_layers)
 
   #backpropogation stuff
@@ -121,14 +124,17 @@ class Generation:
   def find_best_children(self, input_layers, ideal_output_layers, num_children, num_survive):
     children = self.make_children(num_children)
     best_children = []
-    for i in range(num_survive):
-      costs = []
-      for child in children:
-        cost = child.find_cost(input_layers, ideal_output_layers)
-        costs.append(cost)
+    costs = []
+    for child in children:
+      cost = child.compute_final_RSS(input_layers, ideal_output_layers)
+      costs.append(cost)
 
+    for i in range(num_survive):
       best_child_index = costs.index(np.min(costs))
       best_children.append(children[best_child_index])
+      children.pop(best_child_index)
+      costs.pop(best_child_index)
+
     return best_children
 
   def iterate(self, input_layers, ideal_output_layers, num_children_per_net=20, num_parent_nets=1):
@@ -145,9 +151,10 @@ class Generation:
 net_size = [2, 5, 5, 5, 5, 5, 2]
 points = 50
 domain = [-1, 1]
-iterations = 20
+iterations = 150
 child_nets = 50
-parent_nets = 4
+parent_nets = 5
+coefficients = [0.1, 0.2, 0.3, 0, 0.05, 5]
 
 weights = generate_weights(net_size)
 parent_net = NeuralNet(weights)
@@ -155,14 +162,24 @@ inputs = np.linspace(domain[0], domain[1], points)
 ideal_output_layers = []
 input_layers = []
 for input in inputs:
-  ideal_output_layers.append([eval_coefficients(get_ground_coefficients(), input)])
+  ideal_output_layers.append([eval_coefficients(coefficients, input)])
   input_layers.append([input])
 generation = Generation([parent_net])
 for i in range(iterations):
   generation = generation.iterate(input_layers, ideal_output_layers, child_nets, parent_nets)
   print(generation.compute_RSS(input_layers, ideal_output_layers))
 
+final_net = generation.nets[0]
+ideal_outputs = []
+outputs = []
+
 for i in range(len(input_layers)):
-  print(generation.nets[0].compute_all_layers(input_layers[i])[0])
+  print(final_net.compute_all_layers(input_layers[i])[0])
+  outputs.append(final_net.compute_all_layers(input_layers[i])[0][0])
   print(ideal_output_layers[i])
+  ideal_outputs.append(ideal_output_layers[i][0])
   print(' ')
+
+plt.plot(inputs, outputs)
+plt.plot(inputs, ideal_outputs)
+plt.savefig('2024-08-11-genetic-algorithm/neural_fitting.png')
