@@ -147,7 +147,7 @@ points = 50
 domain = [-1, 1]
 iterations = 20
 child_nets = 50
-parent_nets = 5
+parent_nets = 4
 
 weights = generate_weights(net_size)
 parent_net = NeuralNet(weights)
