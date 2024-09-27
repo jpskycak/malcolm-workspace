@@ -22,4 +22,4 @@ for generation_num in range(100):
 plot_ground_coefficients(coefficients, start_x, end_x)
 
 
-plt.savefig('plot.png')
+plt.savefig('basic_fitting.png')

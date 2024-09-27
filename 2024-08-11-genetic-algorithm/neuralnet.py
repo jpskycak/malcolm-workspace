@@ -149,12 +149,12 @@ class Generation:
     return RSS / len(self.nets)
 
 net_size = [2, 5, 5, 5, 5, 5, 2]
-points = 50
+points = 100
 domain = [-1, 1]
-iterations = 150
+iterations = 1000
 child_nets = 50
 parent_nets = 5
-coefficients = [0.1, 0.2, 0.3, 0, 0.05, 5]
+coefficients = [0.1, 0.2, 0.3, -1.7, 0.05, 5]
 
 weights = generate_weights(net_size)
 parent_net = NeuralNet(weights)
