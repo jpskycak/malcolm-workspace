@@ -154,20 +154,35 @@ domain = [-1, 1]
 iterations = 1000
 child_nets = 50
 parent_nets = 5
-coefficients = [0.1, 0.2, 0.3, -1.7, 0.05, 5]
+coefficients = [1, 2.8, 0.5, -1, -5.2, 1]
 
 weights = generate_weights(net_size)
 parent_net = NeuralNet(weights)
 inputs = np.linspace(domain[0], domain[1], points)
+for i in range(len(inputs)):
+  inputs[i] += random.random() * (domain[1] - domain[0])/ (2 * points) - (domain[1] - domain[0])/ (4 * points)
 ideal_output_layers = []
 input_layers = []
 for input in inputs:
-  ideal_output_layers.append([eval_coefficients(coefficients, input)])
+  ideal_output_layers.append([eval_coefficients(coefficients, input, 1)])
   input_layers.append([input])
 generation = Generation([parent_net])
 for i in range(iterations):
   generation = generation.iterate(input_layers, ideal_output_layers, child_nets, parent_nets)
   print(generation.compute_RSS(input_layers, ideal_output_layers))
+
+  current_net = generation.nets[0]
+  ideal_outputs = []
+  outputs = []
+
+  for i in range(len(input_layers)):
+    outputs.append(current_net.compute_all_layers(input_layers[i])[0][0])
+    ideal_outputs.append(ideal_output_layers[i][0])
+
+  plt.plot(inputs, outputs)
+  plt.plot(inputs, ideal_outputs)
+  plt.savefig('2024-08-11-genetic-algorithm/neural_fitting.png')
+  plt.clf()
 
 final_net = generation.nets[0]
 ideal_outputs = []

@@ -4,6 +4,7 @@ sys.path.append('/home/runner/malcolm-workspace/2023-08-13-matrix-class')
 from matrix import *
 
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 
 ground_coefficients = [0.1, 0.2, 0.3, 0, 0.05, 0]
@@ -11,11 +12,11 @@ ground_coefficients = [0.1, 0.2, 0.3, 0, 0.05, 0]
 def get_ground_coefficients():
   return ground_coefficients
 
-def eval_coefficients(coefficients, x):
+def eval_coefficients(coefficients, x, noise):
   result = 0
   for i in range(len(coefficients)):
     c = coefficients[i]
-    result += c * (x**i)
+    result += c * (x**i) + random.random() * noise - noise/2
   return result
 
 def plot_ground_coefficients(coefficients, start_x, stop_x):
